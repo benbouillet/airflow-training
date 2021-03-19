@@ -10,16 +10,16 @@ from utils.config import config
 default_args = {
     "owner": "my_organization",
     "depends_on_past": False,
-    "start_date": datetime.datetime(2010, 1, 1),
+    "start_date": datetime.datetime(2021, 3, 19, 10, 40),
     "retries": 1,
-    "retry_delay": datetime.timedelta(minutes=1),
+    "retry_delay": datetime.timedelta(seconds=30),
 }
 
 dag = DAG(
     "trigger",
-    catchup=False,
+    catchup=True,
     default_args=default_args,
-    schedule_interval="* * * * *",
+    schedule_interval="*/1 * * * *",
     description="This DAG checks when a file is dumped in the 'dumped' folder and if so triggers the main DAG."
 )
 
@@ -47,22 +47,22 @@ def conditionally_trigger(context, dag_run_obj):
         Describes an instance of a DAG.
     """
 
-    # dumped_folder = pathlib.Path(config["dumped_folder"])
-    # toprocess_folder = pathlib.Path(config["toprocess_folder"])
-    # files = list(pathlib.Path(dumped_folder).rglob("*.csv"))
-    # if files:
-    #     dumped_filepath, toprocess_filepath = move_file(
-    #         dumped_folder, toprocess_folder)
-    #     dag_run_obj.payload = {"toprocess_filepath": str(toprocess_filepath)}
-    #     return dag_run_obj
+    dumped_folder = pathlib.Path(config["dumped_folder"])
+    toprocess_folder = pathlib.Path(config["toprocess_folder"])
+    files = list(pathlib.Path(dumped_folder).rglob("*.csv"))
+    if files:
+        dumped_filepath, toprocess_filepath = move_file(
+            dumped_folder, toprocess_folder)
+        dag_run_obj.payload = {"toprocess_filepath": str(toprocess_filepath)}
+        return dag_run_obj
 
 
 # https://airflow.apache.org/docs/stable/_api/airflow/operators/dagrun_operator/index.html#module-airflow.operators.dagrun_operator
-# trigger = TriggerDagRunOperator(
-#     task_id="trigger_dagrun",
-#     trigger_dag_id="main",
-#     python_callable=conditionally_trigger,
-#     dag=dag,
-# )
+trigger = TriggerDagRunOperator(
+    task_id="trigger_dagrun",
+    trigger_dag_id="main",
+    python_callable=conditionally_trigger,
+    dag=dag,
+)
 
-# trigger
+trigger
